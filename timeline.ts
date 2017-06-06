@@ -63,8 +63,6 @@ ${dumpfile("index.js")}
     var absolutePath = path.resolve("times.html");
     fs.writeFileSync(absolutePath, file);
     console.log();
-    console.log(JSON.stringify(timeline));
-    console.log();
     console.log("Timeline report at: " + chalk.underline("file://" + absolutePath));
 }
 
