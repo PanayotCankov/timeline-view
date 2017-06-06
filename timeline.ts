@@ -64,6 +64,7 @@ ${dumpfile("index.js")}
     fs.writeFileSync(absolutePath, file);
     console.log();
     console.log("Timeline report at: " + chalk.underline("file://" + absolutePath));
+    process.exit(0);
 }
 
 process.on('SIGINT', logOnExit);
