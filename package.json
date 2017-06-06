@@ -26,5 +26,13 @@
     "@types/chalk": "^0.4.31",
     "@types/node": "^7.0.27",
     "typescript": "^2.3.4"
-  }
+  },
+  "files": [
+    "index.html",
+    "index.js",
+    "LICENSE",
+    "sample-data.js",
+    "style.css",
+    "timeline.js"
+  ]
 }
