@@ -14,14 +14,14 @@
   "bin": "timeline.js",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/PanayotCankov/timeline.git"
+    "url": "git+https://github.com/PanayotCankov/timeline-view.git"
   },
   "author": "",
   "license": "Apache-2.0",
   "bugs": {
-    "url": "https://github.com/PanayotCankov/timeline/issues"
+    "url": "https://github.com/PanayotCankov/timeline-view/issues"
   },
-  "homepage": "https://github.com/PanayotCankov/timeline#readme",
+  "homepage": "https://github.com/PanayotCankov/timeline-view#readme",
   "devDependencies": {
     "@types/chalk": "^0.4.31",
     "@types/node": "^7.0.27",

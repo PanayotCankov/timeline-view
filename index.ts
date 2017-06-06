@@ -1,3 +1,6 @@
+// TRICKY: Expected to be injected earlier...
+declare var timeline; // Trace[]
+
 interface Trace {
     name: string;
     from: number;
@@ -43,8 +46,6 @@ function orderStackTraces(traces: Trace[]): StackedTrace[] {
     return stackedTraces;
 }
 
-// TRICKY: Expected to be injected earlier...
-declare var timeline;
 const stackTraces = orderStackTraces(timeline);
 
 let min = stackTraces.reduce((min, trace) => Math.min(min, trace.from), Number.POSITIVE_INFINITY);
@@ -188,6 +189,9 @@ chart.appendChild(traces);
 document.body.appendChild(chart);
 
 function focusTrace(this: HTMLDivElement, ev: MouseEvent) {
+    if (suspendClicks) {
+        return;
+    }
     const trace = (<any>this).trace;
     pixelPerMs = window.innerWidth / (trace.to - trace.from);
     left = trace.from;
@@ -214,15 +218,28 @@ window.addEventListener("mousewheel", function(e) {
 });
 
 let dragging = false;
+let suspendClicks = false;
+let mouseDown = false;
 let dragOriginXms: number; // The millisecond at which the chart was grabbed
+let dragOriginXpx: number;
 window.addEventListener("mousedown", function(e) {
-    dragging = true;
     dragOriginXms = left + e.clientX / pixelPerMs;
+    dragOriginXpx = e.clientX;
+    mouseDown = true;
 }, true);
 window.addEventListener("mouseup", function(e) {
-    dragging = false;
-}, true);
+    if (dragging) {
+        dragging = false;
+        // Cant find a way to prevent the click action
+        suspendClicks = true;
+        setTimeout(() => suspendClicks = false, 1);
+    }
+    mouseDown = false;
+});
 window.addEventListener("mousemove", function(e) {
+    if (mouseDown && !dragging && Math.abs(e.clientX - dragOriginXpx) > 8) {
+        dragging = true;
+    }
     if (dragging) {
         left = dragOriginXms - e.clientX / pixelPerMs;
         clampViewPort();
