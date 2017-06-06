@@ -49,7 +49,7 @@ function orderStackTraces(traces: Trace[]): StackedTrace[] {
 const stackTraces = orderStackTraces(timeline);
 
 let min = stackTraces.reduce((min, trace) => Math.min(min, trace.from), Number.POSITIVE_INFINITY);
-let max = stackTraces.reduce((max, trace) => Math.max(max, trace.from), Number.NEGATIVE_INFINITY);
+let max = stackTraces.reduce((max, trace) => Math.max(max, trace.to), Number.NEGATIVE_INFINITY);
 
 let left: number = min;
 let pixelPerMs: number = 0.1;
