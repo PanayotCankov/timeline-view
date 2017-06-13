@@ -7,15 +7,48 @@ interface Trace {
     to: number;
     domain?: string;
 }
+
 interface StackedTrace {
+    div: HTMLDivElement;
+    visible: boolean;
+
     name: string;
+
+    innerText: string;
+    title: string;
+
     from: number;
     to: number;
     domain?: string;
     depth: number;
+
+    leftPx: number;
+    rightPx: number;
+
+    parent: StackedTrace;
+    importance: number;
 }
 
-function orderStackTraces(traces: Trace[]): StackedTrace[] {
+const background = document.createElement('canvas');
+const context = background.getContext("2d");
+
+const rulerBackgroundPattern = document.createElement('canvas');
+const rulerBackgroundPatternContext = rulerBackgroundPattern.getContext("2d");
+
+const timelineBackgroundPattern = document.createElement('canvas');
+const timelineBackgroundPatternContext = timelineBackgroundPattern.getContext("2d");
+
+const chart = document.createElement('div');
+chart.id = "chart";
+chart.appendChild(background);
+
+const tracesDiv = document.createElement('div');
+tracesDiv.id = "traces";
+chart.appendChild(tracesDiv);
+
+document.body.appendChild(chart);
+
+function createStackTraces(traces: Trace[]): StackedTrace[] {
     traces = traces.slice(0).sort((a, b) => {
         if (a.from < b.from) {
             return -1;
@@ -31,67 +64,123 @@ function orderStackTraces(traces: Trace[]): StackedTrace[] {
             return 1;
         }
     });
-    const depthTo = [];
-    const stackedTraces = traces.map(({ from, to, name, domain }) => {
-        var depth;
-        for (var i = 0; i <= depthTo.length; i++) {
-            if (depthTo[i] === undefined || depthTo[i] <= from) {
+    const traceAtDepth = [];
+    const stackedTraces = traces.map(original => {
+        let { from, to, name, domain } = original;
+        let trace: StackedTrace = <any>{ from, to };
+        let depth;
+        for (let i = 0; i <= traceAtDepth.length; i++) {
+            if (traceAtDepth[i] === undefined || traceAtDepth[i].to <= from) {
                 depth = i;
-                depthTo[i] = to;
+                traceAtDepth[i] = trace;
                 break;
             }
         }
-        return { from, to, name, domain, depth };
-    });
+        let parent: StackedTrace;
+        for (let i = depth - 1; i >= 0; i--) {
+            let potentialParent = traceAtDepth[i];
+            if (potentialParent.from <= trace.from && potentialParent.to >= trace.to) {
+                trace.parent = parent = potentialParent;
+                break;
+            }
+        }
+        let importance: number;
+        if (parent) {
+            // If it is very big, or very small - it does not matter, if it is about half its parent then it is important.
+            let ratio = (trace.to - trace.from) / (parent.to - parent.from);
+            importance = depth <= 1 ? 1 : 0.5 - Math.cos(2 * Math.PI * ratio) * 0.5;
+        } else {
+            importance = 1;
+        }
+
+        let innerText = name + " " + Math.round(to - from) + "ms";
+        let title = name + " " + (to - from) + "ms " + importance;
+        let visible = false;
+
+        const div = document.createElement('div');
+        div.className = "trace " + domain;
+        tracesDiv.appendChild(div);
+        div.title = title;
+        div.innerText = innerText;
+
+        div.style.visibility = "hidden";
+        div.style.top = 30 + depth * 21 + "px";
+        div.addEventListener("click", focusTrace);
+
+        Object.assign<StackedTrace, StackedTrace>(trace, { from, to, name, domain, depth, innerText, title, div, visible, leftPx: 0, rightPx: 0, parent, importance });
+        (<any>div).trace = trace;
+
+        return trace;
+    }).sort((a, b) => b.importance - a.importance);
     return stackedTraces;
 }
 
-const stackTraces = orderStackTraces(timeline);
+const stackTraces = createStackTraces(timeline);
+let visibleStackTraces = new Set();
 
 let min = stackTraces.reduce((min, trace) => Math.min(min, trace.from), Number.POSITIVE_INFINITY);
 let max = stackTraces.reduce((max, trace) => Math.max(max, trace.to), Number.NEGATIVE_INFINITY);
 
 let left: number = min;
-let pixelPerMs: number = 0.1;
+let pixelPerMs: number = 0.0000001;
 
-const stackTraceDivs: HTMLDivElement[] = [];
-function createStackTraces() {
-    stackTraces.forEach(trace => {
-        const div = document.createElement('div');
-        div.className = "trace " + trace.domain;
-        traces.appendChild(div);
-        div.innerText = trace.name + " " + Math.round(trace.to - trace.from) + "ms";
-        div.title = trace.name + " " + (trace.to - trace.from) + "ms";
-        (<any>div).trace = trace;
-        stackTraceDivs.push(div);
-        div.addEventListener("click", focusTrace);
-    });
+const enum LevelOfDetail {
+    High,
+    Low
+}
+let levelOfDetail = LevelOfDetail.High;
+let debounceLODTimeout;
+function highLOD() {
+    if (debounceLODTimeout) {
+        clearTimeout(debounceLODTimeout);
+    }
+    levelOfDetail = LevelOfDetail.High;
+    tracesDiv.style.pointerEvents = "auto";
+    updateStackTraces();
+}
+function lowLOD() {
+    levelOfDetail = LevelOfDetail.Low;
+    if (debounceLODTimeout) {
+        clearTimeout(debounceLODTimeout);
+    }
+    debounceLODTimeout = setTimeout(highLOD, 1000);
+    tracesDiv.style.pointerEvents = "none";
 }
 function updateStackTraces() {
-    let right = left + (window.innerWidth / pixelPerMs);
+    let windowWidth = window.innerWidth;
+    let right = left + (windowWidth / pixelPerMs);
 
-    stackTraceDivs.forEach(div => {
-        let trace = (<any>div).trace;
-        let leftPx = (trace.from - left) * pixelPerMs;
-        let rightPx = window.innerWidth - (trace.to - left) * pixelPerMs;
-        div.style.left = Math.max(-5, leftPx) + "px";
-        div.style.top = 30 + trace.depth * 21 + "px";
-        div.style.right = Math.max(-5, rightPx) + "px";
+    let nextVisible = new Set();
+    let showTraces = levelOfDetail === LevelOfDetail.Low ? 64 : 512;
+    for (var i = 0; i < stackTraces.length && nextVisible.size < showTraces; i++) {
+        let trace = stackTraces[i];
+        trace.leftPx = (trace.from - left) * pixelPerMs;
+        trace.rightPx = (trace.to - left) * pixelPerMs;
+        if (trace.rightPx >= 0 && trace.leftPx <= windowWidth && (trace.rightPx - trace.leftPx >= 2)) {
+            nextVisible.add(trace);
+        }
+    }
+
+    visibleStackTraces.forEach(trace => {
+        if (nextVisible.has(trace)) {
+            return;
+        }
+        trace.div.style.visibility = "collapse";
     });
+    nextVisible.forEach(trace => {
+        let { div, leftPx, rightPx } = trace;
+        div.style.left = Math.max(-5, leftPx) + "px";
+        div.style.right = Math.max(-5, windowWidth - rightPx) + "px";
+        if (!visibleStackTraces.has(trace)) {
+            div.style.visibility = "visible";
+        }
+    });
+    visibleStackTraces = nextVisible;
 }
 
 function snap(px: number): number {
     return Math.floor(px) + 0.5;
 }
-
-const background = document.createElement('canvas');
-const context = background.getContext("2d");
-
-const rulerBackgroundPattern = document.createElement('canvas');
-const rulerBackgroundPatternContext = rulerBackgroundPattern.getContext("2d");
-
-const timelineBackgroundPattern = document.createElement('canvas');
-const timelineBackgroundPatternContext = timelineBackgroundPattern.getContext("2d");
 
 function redrawBackground() {
     rulerBackgroundPatternContext.fillStyle = "#DDD";
@@ -178,16 +267,6 @@ function clampViewPort() {
     left = Math.min(Math.max(min, left), max - window.innerWidth / pixelPerMs);
 }
 
-const chart = document.createElement('div');
-chart.id = "chart";
-chart.appendChild(background);
-
-const traces = document.createElement('div');
-traces.id = "traces";
-chart.appendChild(traces);
-
-document.body.appendChild(chart);
-
 function focusTrace(this: HTMLDivElement, ev: MouseEvent) {
     if (suspendClicks) {
         return;
@@ -211,6 +290,7 @@ window.addEventListener("mousewheel", function(e) {
     const mousePoint = left + e.clientX / pixelPerMs;
     pixelPerMs = Math.pow(2, (<any>Math).log2(pixelPerMs) + Math.max(-0.25, Math.min(0.25, e.wheelDelta)));
     left = mousePoint - e.clientX / pixelPerMs;
+    lowLOD();
     clampViewPort();
     resizeRulers();
     redrawBackground();
@@ -242,6 +322,7 @@ window.addEventListener("mousemove", function(e) {
     }
     if (dragging) {
         left = dragOriginXms - e.clientX / pixelPerMs;
+        lowLOD();
         clampViewPort();
         redrawBackground();
         updateStackTraces();
@@ -252,5 +333,4 @@ clampViewPort();
 resize();
 resizeRulers();
 redrawBackground();
-createStackTraces();
 updateStackTraces();

@@ -9,7 +9,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "prepare": "tsc",
-    "watch": "tsc -w"
+    "watch": "tsc -w",
+    "log1": "node timeline.js < samples/log1.txt && open times.html"
   },
   "bin": "timeline.js",
   "repository": {
