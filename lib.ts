@@ -1,6 +1,5 @@
 import * as fs from "fs";
 import * as path from "path";
-import * as chalk from "chalk";
 
 var timeLog = /Timeline:\s*(\d*.?\d*ms:\s*)?([^\:]*\:)?(.*)\((\d*.?\d*)ms\.?\s*-\s*(\d*.\d*)ms\.?\)/;
 
@@ -30,10 +29,14 @@ export function saveReport(timeline, destination) {
     var chart = getChart(timeline);
 
     var absolutePath = path.resolve(destination);
-    console.log("\nTimeline report at: " + chalk.underline("file://" + absolutePath));
+    console.log("\nTimeline report at: " + underline("file://" + absolutePath));
 
     fs.writeFileSync(absolutePath, chart);
 
+}
+
+function underline(text) {
+    return "\u001b[4m" + text + "\u001b[0m";
 }
 
 function getChart(timeline) {
