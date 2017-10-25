@@ -5,6 +5,9 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
+# Declaration files
+**/*.d.ts
+
 # Runtime data
 pids
 *.pid
