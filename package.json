@@ -31,10 +31,11 @@
   "files": [
     "index.html",
     "index.js",
+    "lib.js",
     "LICENSE",
     "sample-data.js",
     "style.css",
     "timeline.js",
-    "timeline.d.ts"
+    "index.d.ts"
   ]
 }
