@@ -27,11 +27,12 @@
   "files": [
     "index.html",
     "index.js",
+    "index.d.ts",
     "lib.js",
+    "lib.d.ts",
     "LICENSE",
     "sample-data.js",
     "style.css",
-    "timeline.js",
-    "index.d.ts"
+    "timeline.js"
   ]
 }
