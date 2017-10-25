@@ -19,7 +19,7 @@ export function toTrace(text) {
     return trace;
 }
 
-export function saveReport(timeline, destination) {
+export function saveTimeline(timeline, destination) {
     var range = timeline.reduce((acc, line) => {
         return { from: Math.min(acc.from, line.from), to: Math.max(acc.to, line.to)}
     }, { from: Number.POSITIVE_INFINITY, to: Number.NEGATIVE_INFINITY });

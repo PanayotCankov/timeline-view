@@ -2,7 +2,7 @@
 
 import * as readline from "readline";
 
-import { toTrace, saveReport } from "./lib";
+import { toTrace, saveTimeline } from "./lib";
 
 var readlineInterface = readline.createInterface({ input: process.stdin });
 var timeline = [];
@@ -26,7 +26,7 @@ function logOnExit() {
 
     console.log("Exiting... Print charts...");
 
-    saveReport(timeline, "times.html");
+    saveTimeline(timeline, "times.html");
     process.exit(0);
 }
 
