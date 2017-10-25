@@ -51,7 +51,7 @@ ${dumpfile("style.css")}
 <body>
   <script>
 var timeline = ${JSON.stringify(timeline)};
-${dumpfile("index.js")}
+${dumpfile("chart.js")}
   </script>
 </body>
 </html>`;

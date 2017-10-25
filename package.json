@@ -33,6 +33,7 @@
     "LICENSE",
     "sample-data.js",
     "style.css",
+    "chart.js",
     "timeline.js"
   ]
 }
