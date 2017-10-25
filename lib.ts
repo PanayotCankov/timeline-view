@@ -3,7 +3,14 @@ import * as path from "path";
 
 var timeLog = /Timeline:\s*(\d*.?\d*ms:\s*)?([^\:]*\:)?(.*)\((\d*.?\d*)ms\.?\s*-\s*(\d*.\d*)ms\.?\)/;
 
-export function toTrace(text) {
+export interface Trace {
+    domain?: string;
+    name: string;
+    from: number;
+    to: number;
+}
+
+export function toTrace(text): Trace {
     var result = text.match(timeLog);
     if (!result) {
         return;
@@ -19,27 +26,26 @@ export function toTrace(text) {
     return trace;
 }
 
-export function saveTimeline(timeline, destination) {
-    var range = timeline.reduce((acc, line) => {
-        return { from: Math.min(acc.from, line.from), to: Math.max(acc.to, line.to)}
-    }, { from: Number.POSITIVE_INFINITY, to: Number.NEGATIVE_INFINITY });
-    range.name = "ALL";
-    timeline.push(range);
-
-    var chart = getChart(timeline);
-
+export function saveTimeline(timeline: Trace[], destination: string) {
+    addRootLine(timeline);
+    var chart = createChartHTML(timeline);
     var absolutePath = path.resolve(destination);
     console.log("\nTimeline report at: " + underline("file://" + absolutePath));
-
     fs.writeFileSync(absolutePath, chart);
-
 }
 
-function underline(text) {
+export function addRootLine(timeline: Trace[]) {
+    var { from, to } = timeline.reduce((acc, line) => {
+        return { from: Math.min(acc.from, line.from), to: Math.max(acc.to, line.to)}
+    }, { from: Number.POSITIVE_INFINITY, to: Number.NEGATIVE_INFINITY });
+    timeline.push({ from, to, name: "ALL" });
+}
+
+export function underline(text: string): string {
     return "\u001b[4m" + text + "\u001b[0m";
 }
 
-function getChart(timeline) {
+export function createChartHTML(timeline: Trace[]): string {
     return `<!DOCTYPE html>
 <html>
 <head>

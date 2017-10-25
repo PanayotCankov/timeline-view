@@ -30,7 +30,7 @@ interface StackedTrace {
 }
 
 const background = document.createElement('canvas');
-const context = background.getContext("2d");
+const context2d = background.getContext("2d");
 
 const rulerBackgroundPattern = document.createElement('canvas');
 const rulerBackgroundPatternContext = rulerBackgroundPattern.getContext("2d");
@@ -228,25 +228,25 @@ function redrawBackground() {
 
     const rulerOffset = -Math.round((left - Math.floor(left / 1000) * 1000) * pixelPerMs)
 
-    const rulerPattern = context.createPattern(rulerBackgroundPattern, "repeat");
-    context.fillStyle = rulerPattern;
-    context.translate(rulerOffset, 0);
-    context.fillRect(-rulerOffset, 0, background.width, 30);
-    context.translate(-rulerOffset, 0);
+    const rulerPattern = context2d.createPattern(rulerBackgroundPattern, "repeat");
+    context2d.fillStyle = rulerPattern;
+    context2d.translate(rulerOffset, 0);
+    context2d.fillRect(-rulerOffset, 0, background.width, 30);
+    context2d.translate(-rulerOffset, 0);
 
-    const timelinePattern = context.createPattern(timelineBackgroundPattern, "repeat");
-    context.fillStyle = timelinePattern;
-    context.translate(rulerOffset, 31);
-    context.fillRect(-rulerOffset, 0, background.width, background.height - 30);
-    context.translate(-rulerOffset, -31);
+    const timelinePattern = context2d.createPattern(timelineBackgroundPattern, "repeat");
+    context2d.fillStyle = timelinePattern;
+    context2d.translate(rulerOffset, 31);
+    context2d.fillRect(-rulerOffset, 0, background.width, background.height - 30);
+    context2d.translate(-rulerOffset, -31);
 
     // Separators
-    context.lineWidth = 1;
-    context.strokeStyle = "#666";
-    context.beginPath();
-    context.moveTo(0, snap(30));
-    context.lineTo(background.width, snap(30));
-    context.stroke();
+    context2d.lineWidth = 1;
+    context2d.strokeStyle = "#666";
+    context2d.beginPath();
+    context2d.moveTo(0, snap(30));
+    context2d.lineTo(background.width, snap(30));
+    context2d.stroke();
 }
 function resize() {
     background.width = window.innerWidth;
